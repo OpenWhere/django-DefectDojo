@@ -368,7 +368,7 @@ function install_db() {
     elif [[ ! -z "$APT_GET_CMD" ]]; then
         if [ "$DBTYPE" == $MYSQL ]; then
             echo "Installing MySQL client (and server if not already installed)"
-            sudo apt-get install -y libmysqlclient-dev mysql-server
+            sudo apt-get install -y libmysqlclient-dev mysql-client
         elif [ "$DBTYPE" == $POSTGRES ]; then
             echo "Installing Postgres client (and server if not already installed)"
             sudo apt-get install -y libpq-dev postgresql postgresql-contrib libmysqlclient-dev
@@ -490,7 +490,7 @@ function install_app(){
         else
             # non-interactively setup the superuser
             python manage.py createsuperuser --noinput --username=admin --email='ed@example.com'
-            docker/setup-superuser.expect
+            [[ $? == 0 ]] && docker/setup-superuser.expect
         fi
     fi
 
