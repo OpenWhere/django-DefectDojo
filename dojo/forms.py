@@ -223,7 +223,6 @@ class Product_TypeProductForm(forms.ModelForm):
         fields = ['name', 'description', 'product_manager', 'technical_contact', 'team_manager', 'prod_type',
                   'authorized_users']
 
-
 class ImportScanForm(forms.Form):
     SCAN_TYPE_CHOICES = (("", "Please Select a Scan Type"),
                          ("Burp Scan", "Burp Scan"),
@@ -233,12 +232,14 @@ class ImportScanForm(forms.Form):
                          ("AppSpider Scan", "AppSpider Scan"),
                          ("Veracode Scan", "Veracode Scan"),
                          ("Checkmarx Scan", "Checkmarx Scan"),
+                         ("Crashtest Security Scan", "Crashtest Security Scan"),
                          ("ZAP Scan", "ZAP Scan"),
                          ("Arachni Scan", "Arachni Scan"),
                          ("VCG Scan", "VCG Scan"),
                          ("Dependency Check Scan", "Dependency Check Scan"),
                          ("Retire.js Scan", "Retire.js Scan"),
                          ("Node Security Platform Scan", "Node Security Platform Scan"),
+                         ("NPM Audit Scan", "NPM Audit Scan"),
                          ("Qualys Scan", "Qualys Scan"),
                          ("Qualys Webapp Scan", "Qualys Webapp Scan"),
                          ("OpenVAS CSV", "OpenVAS CSV"),
@@ -246,9 +247,24 @@ class ImportScanForm(forms.Form):
                          ("Generic Findings Import", "Generic Findings Import"),
                          ("Trustwave Scan (CSV)", "Trustwave Scan (CSV)"),
                          ("SKF Scan", "SKF Scan"),
+                         ("Clair Klar Scan", "Clair Klar Scan"),
                          ("Bandit Scan", "Bandit Scan"),
                          ("SSL Labs Scan", "SSL Labs Scan"),
-                         ("Gosec Scanner", "Gosec Scanner"))
+                         ("Acunetix Scan", "Acunetix Scan"),
+                         ("Fortify Scan", "Fortify Scan"),
+                         ("Gosec Scanner", "Gosec Scanner"),
+                         ("SonarQube Scan", "SonarQube Scan"),
+                         ("MobSF Scan", "MobSF Scan"),
+                         ("Trufflehog Scan", "Trufflehog Scan"),
+                         ("Nikto Scan", "Nikto Scan"),
+                         ("Clair Scan", "Clair Scan"),
+                         ("Brakeman Scan", "Brakeman Scan"),
+                         ("SpotBugs Scan", "SpotBugs Scan"),
+                         ("AWS Scout2 Scan", "AWS Scout2 Scan"),
+                         ("AWS Prowler Scan", "AWS Prowler Scan"),
+                         ("PHP Security Audit v2", "PHP Security Audit v2"),
+                         ("Safety Scan", "Safety Scan"))
+
 
     SORTED_SCAN_TYPE_CHOICES = sorted(SCAN_TYPE_CHOICES, key=lambda x: x[1])
 
