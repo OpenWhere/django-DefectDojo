@@ -1,6 +1,7 @@
 import json
 import urllib
 from dojo.models import Finding
+from selenium import webdriver
 
 
 class SafetyParser(object):
@@ -33,19 +34,29 @@ class SafetyParser(object):
 
         for key, node in tree.iteritems():
             item = get_item(node, test, safety_db)
+            print item
             items[key] = item
 
         return items.values()
 
 
 def get_item(item_node, test, safety_db):
-    severity = 'Info'  # Because Safety doesn't include severity rating
     cve = ''.join(a['cve'] for a in safety_db[item_node['package']] if a['id'] == 'pyup.io-' + item_node['id'])
     title = item_node['package'] + " (" + item_node['affected'] + ")"
     if cve:
         title = title + " | " + cve
+        cve_sev = get_cve_severity(cve)
+        if 0.1 <= float(cve_sev) <= 3.9:
+            severity = 'Low'
+        elif 4.0 <= float(cve_sev) <= 6.9:
+            severity = 'Medium'
+        elif 7.0 <= float(cve_sev) <= 8.9:
+            severity = 'High'
+        else:
+            severity = 'Critical'
     else:
         cve = "N/A"
+        severity = 'Medium'
 
     finding = Finding(title=title,
                       test=test,
@@ -68,3 +79,12 @@ def get_item(item_node, test, safety_db):
                       impact="No impact provided")
 
     return finding
+
+
+def get_cve_severity(cve):
+    url = 'https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=' + cve
+    driver = webdriver.PhantomJS()
+    driver.get(url)
+    p_element = driver.find_element_by_id(id_='cvss-base-score-cell')
+    return p_element.text
+
