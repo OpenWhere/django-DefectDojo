@@ -82,7 +82,7 @@ def get_item(item_node, test, safety_db):
 
 
 def get_cve_severity(cve):
-    url = 'https://nvd.nist.gov/vuln-metrics/cvss/v3-calculator?name=' + cve
+    url = 'https://nvd.nist.gov/vuln-metrics/cvss/v2-calculator?name=' + cve
     driver = webdriver.PhantomJS()
     driver.get(url)
     p_element = driver.find_element_by_id(id_='cvss-base-score-cell')
