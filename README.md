@@ -107,3 +107,5 @@ Interested in becoming a sponsor and having your logo displayed? Please review o
 # License
 
 DefectDojo is licensed under the [BSD Simplified license](LICENSE.md)
+
+
