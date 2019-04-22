@@ -225,6 +225,10 @@ CELERY_BEAT_SCHEDULE_FILENAME = DOJO_ROOT + '/dojo.celery.beat.db'
 CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 CELERY_TASK_SERIALIZER = "pickle"
 
+# Dojo Close Aged Findings by User Task
+CICD_USERNAME = 'ingestor_api'
+MAXIMUM_AGE = 30
+
 # Celery beat scheduled tasks
 CELERY_BEAT_SCHEDULE = {
     'add-alerts': {
@@ -236,6 +240,11 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'dojo.tasks.async_dupe_delete',
         'schedule': timedelta(hours=24),
         'args': [timedelta(hours=24)]
+    },
+    'close_aged_findings_by_user': {
+        'task': 'dojo.tasks.close_aged_findings_by_user',
+        'schedule': timedelta(minutes=5),
+        'args': [CICD_USERNAME, MAXIMUM_AGE]
     },
 }
 

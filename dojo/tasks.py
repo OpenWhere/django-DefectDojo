@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from __future__ import unicode_literals
 
 import tempfile
-from datetime import timedelta
+from datetime import datetime, timedelta
 from django.db.models import Count
 from django.conf import settings
 from django.core.files.base import ContentFile
@@ -11,7 +11,7 @@ from django.template.loader import render_to_string
 from django.utils.http import urlencode
 from celery.utils.log import get_task_logger
 from celery.decorators import task
-from dojo.models import Product, Finding, Engagement, System_Settings
+from dojo.models import Product, Finding, Engagement, System_Settings, User, Notes
 from django.utils import timezone
 
 import pdfkit
@@ -292,6 +292,35 @@ def async_dupe_delete(*args, **kwargs):
                 dupe_count = dupe_count - 1
                 if dupe_count == 0:
                     break
+
+
+@app.task(bind=True)
+def close_aged_findings_by_user(self, username, age):
+    target_user = username
+    target_age = (datetime.now() - timedelta(days=age)).date()
+    findings = Finding.objects.filter(active=True, verified=True, duplicate=False).order_by('numerical_severity')
+    print "!! Checking for aged findings submitted by %s and older than %s." % (target_user, target_age)
+    tracker = 0
+    for finding in findings:
+        duplicates = [d.date for d in finding.duplicate_finding_set().all()]
+        dates = [finding.date] + duplicates
+        if max(dates) < target_age and (str(finding.reporter) == target_user):
+            tracker += 1
+            # Close Finding and increment tracker counter
+            finding.active = False
+            finding.save()
+
+            # Create Note to Record Automated Closure
+            now = timezone.now()
+            new_note = Notes()
+            new_note.entry = "Finding automatically closed by Ingestor_API Script due to no updated duplicate " \
+                             "findings within the %s day permitted threshold." % age
+            new_note.author = User.objects.get(username='ingestor_api')
+            new_note.date = now
+            new_note.save()
+            finding.notes.add(new_note)
+            print "%s. Finding #%s \"%s\" closed." % (tracker, finding.id, finding)
+    print "!! Finished checking for aged findings. %s aged findings found." % tracker
 
 
 @task(name='celery_status', ignore_result=False)
