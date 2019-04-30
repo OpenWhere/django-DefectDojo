@@ -227,7 +227,7 @@ CELERY_TASK_SERIALIZER = "pickle"
 
 # Dojo Close Aged Findings by User Task
 CICD_USERNAME = 'ingestor_api'
-MAXIMUM_AGE = 30
+MAXIMUM_AGE = 14
 
 # Celery beat scheduled tasks
 CELERY_BEAT_SCHEDULE = {
