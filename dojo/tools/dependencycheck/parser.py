@@ -21,7 +21,13 @@ class DependencyCheckParser(object):
     def get_finding_from_vulnerability(self, vulnerability, filename, test):
         title = '{0} | {1}'.format(filename,
                                    self.get_field_value(vulnerability, 'name'))
-        severity = self.get_field_value(vulnerability, 'severity')
+        cvssv2_node = vulnerability.find(self.namespace + 'cvssV2')
+        if cvssv2_node is not None:
+            severity = self.get_field_value(cvssv2_node, 'severity').lower().capitalize()
+        else:
+            severity = self.get_field_value(vulnerability, 'severity').lower().capitalize()
+            if not severity:
+                severity = "Info"
         finding_detail = '{0}\n\n{1}'.format(
             self.get_field_value(vulnerability, 'cwe'),
             self.get_field_value(vulnerability, 'description'))
