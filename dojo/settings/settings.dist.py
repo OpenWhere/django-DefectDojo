@@ -243,7 +243,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'close_aged_findings_by_user': {
         'task': 'dojo.tasks.close_aged_findings_by_user',
-        'schedule': timedelta(minutes=5),
+        'schedule': timedelta(minutes=60),
         'args': [CICD_USERNAME, MAXIMUM_AGE]
     },
 }
