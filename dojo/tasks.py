@@ -308,6 +308,7 @@ def close_aged_findings_by_user(self, username, age):
             tracker += 1
             # Close Finding and increment tracker counter
             finding.active = False
+            finding.verified = False
             finding.save()
 
             # Create Note to Record Automated Closure
