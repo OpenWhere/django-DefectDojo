@@ -560,6 +560,10 @@ CELERY_BEAT_SCHEDULE_FILENAME = env('DD_CELERY_BEAT_SCHEDULE_FILENAME')
 CELERY_ACCEPT_CONTENT = ['pickle', 'json', 'msgpack', 'yaml']
 CELERY_TASK_SERIALIZER = env('DD_CELERY_TASK_SERIALIZER')
 
+# Dojo Close Aged Findings by User Task
+CICD_USERNAME = 'ingestor_api'
+MAXIMUM_AGE = 7
+
 # Celery beat scheduled tasks
 CELERY_BEAT_SCHEDULE = {
     'add-alerts': {
@@ -575,6 +579,11 @@ CELERY_BEAT_SCHEDULE = {
     'update-findings-from-source-issues': {
         'task': 'dojo.tasks.async_update_findings_from_source_issues',
         'schedule': timedelta(hours=3),
+    },
+    'close_aged_findings_by_user': {
+        'task': 'dojo.tasks.close_aged_findings_by_user',
+        'schedule': timedelta(minutes=5),
+        'args': [CICD_USERNAME, MAXIMUM_AGE]
     }
 }
 
