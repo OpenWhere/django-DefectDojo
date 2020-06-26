@@ -8,9 +8,10 @@ from django.template.loader import render_to_string
 from django.utils.http import urlencode
 from celery.utils.log import get_task_logger
 from celery.decorators import task
-from dojo.models import Product, Finding, Engagement, System_Settings, User, Notes
+from dojo.models import Product, Finding, Engagement, System_Settings, User, Notes, Test
 from django.utils import timezone
 from dojo.signals import dedupe_signal
+from django.shortcuts import get_object_or_404
 
 import pdfkit
 from dojo.celery import app
@@ -225,32 +226,90 @@ def async_custom_pdf_report(self,
 
 
 @app.task(bind=True)
-def close_aged_findings_by_user(self, username, age):
+def latest_findings_only(self, username, age):
     target_user = username
     target_age = (datetime.now() - timedelta(days=age)).date()
-    findings = Finding.objects.filter(active=True, verified=True, duplicate=False).order_by('numerical_severity')
-    print("!! Checking for aged findings submitted by %s and older than %s." % (target_user, target_age))
-    tracker = 0
-    for finding in findings:
-        duplicates = [d.date for d in finding.duplicate_finding_set().all()]
-        dates = [finding.date] + duplicates
-        if max(dates) < target_age and (str(finding.reporter) == target_user):
-            tracker += 1
-            # Close Finding and increment tracker counter
+    for product in Product.objects.all():
+        findings = Finding.objects.filter(test__engagement__product=product, active=True)
+        findings = [finding.id for finding in findings]
+        product_findings = []
+
+        # Get all current findings for product, traversing duplicates to the first instance
+        for finding_id in findings:
+            finding = get_object_or_404(Finding, id=finding_id)
+            if finding.duplicate:
+                finding = get_object_or_404(Finding, id=finding.duplicate_finding_id)
+            product_findings.append(finding.id)
+
+        # Close findings for product if last engagement is more than X days old
+        eng = Engagement.objects.filter(product=product, engagement_type='CI/CD').order_by('-target_end')[0]
+        target_age = (datetime.now() - timedelta(days=age)).date()
+        if eng.target_end < target_age:
+            for finding_id in product_findings:
+                finding = get_object_or_404(Finding, id=finding_id)
+                if finding.duplicate:
+                    finding = get_object_or_404(Finding, id=finding.duplicate_finding_id)
+                finding.active = False
+                finding.save()
+                new_note = Notes()
+                new_note.entry = "Product engagement older than %s days. Automatically closing \
+                                          associated findings by Ingestor_API script." % age
+                new_note.author = User.objects.get(username=target_user)
+                new_note.date = timezone.now()
+                new_note.save()
+                finding.notes.add(new_note)
+                print('Finding %s [%s] "%s" closed due to last engagement being more than %s days ago.' %
+                      (finding.id, finding.severity, finding, age))
+            # Continue to next product if it has no engagements within X days
+            continue
+
+        # Get the lastest test findings for latest engagement and set active if not FP
+        tests = Test.objects.filter(engagement=eng).order_by('test_type__name', '-updated')
+        eng_findings = []
+        for test in tests:
+            findings = Finding.objects.filter(test=test).order_by('numerical_severity')
+            for finding in findings:
+                if finding.duplicate:
+                    finding = get_object_or_404(Finding, id=finding.duplicate_finding_id)
+                if finding not in eng_findings:
+                    eng_findings.append(finding)
+        for finding in eng_findings:
+            if not finding.active and not finding.false_p:
+                finding.active = True
+                finding.save()
+                new_note = Notes()
+                new_note.entry = "Finding identified on current engagement and automatically " \
+                                 "opened by Ingestor_API script."
+                new_note.author = User.objects.get(username=target_user)
+                new_note.date = timezone.now()
+                new_note.save()
+                finding.notes.add(new_note)
+                print('Finding %s [%s] "%s" opened due to being listed in last engagement.' %
+                      (finding.id, finding.severity, finding))
+
+        # Close findings open in the product but not found in engagement tests
+        findings = Finding.objects.filter(test__engagement__product=product, active=True)
+        findings = [finding.id for finding in findings]
+        prod_findings = []
+        for finding_id in findings:
+            finding = get_object_or_404(Finding, id=finding_id)
+            if finding.duplicate:
+                finding = get_object_or_404(Finding, id=finding.duplicate_finding_id)
+            prod_findings.append(finding)
+        close_in_prod = [finding for finding in prod_findings if finding not in eng_findings]
+
+        for finding in close_in_prod:
             finding.active = False
             finding.save()
-
-            # Create Note to Record Automated Closure
-            now = timezone.now()
             new_note = Notes()
-            new_note.entry = "Finding automatically closed by Ingestor_API Script due to no updated duplicate " \
-                             "findings within the %s day permitted threshold." % age
-            new_note.author = User.objects.get(username='ingestor_api')
-            new_note.date = now
+            new_note.entry = "Finding not identiified on current engagement and automatically " \
+                             "closed by Ingestor_API script."
+            new_note.author = User.objects.get(username=target_user)
+            new_note.date = timezone.now()
             new_note.save()
             finding.notes.add(new_note)
-            print("%s. Finding #%s \"%s\" closed." % (tracker, finding.id, finding))
-    print("!! Finished checking for aged findings. %s aged findings found." % tracker)
+            print('Finding %s [%s] "%s" closed due to not being listed in last engagement.' %
+                  (finding.id, finding.severity, finding))
 
 
 @task(name='fix_loop_task')

@@ -580,8 +580,8 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'dojo.tasks.async_update_findings_from_source_issues',
         'schedule': timedelta(hours=3),
     },
-    'close_aged_findings_by_user': {
-        'task': 'dojo.tasks.close_aged_findings_by_user',
+    'latest_findings_only': {
+        'task': 'dojo.tasks.latest_findings_only',
         'schedule': timedelta(minutes=5),
         'args': [CICD_USERNAME, MAXIMUM_AGE]
     }
