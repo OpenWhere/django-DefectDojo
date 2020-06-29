@@ -250,6 +250,7 @@ def latest_findings_only(self, username, age):
                 if finding.duplicate:
                     finding = get_object_or_404(Finding, id=finding.duplicate_finding_id)
                 finding.active = False
+                finding.verified = False
                 finding.save()
                 new_note = Notes()
                 new_note.entry = "Product engagement older than %s days. Automatically closing \
@@ -276,6 +277,7 @@ def latest_findings_only(self, username, age):
         for finding in eng_findings:
             if not finding.active and not finding.false_p:
                 finding.active = True
+                finding.verified = True
                 finding.save()
                 new_note = Notes()
                 new_note.entry = "Finding identified on current engagement and automatically " \
