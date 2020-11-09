@@ -275,7 +275,7 @@ def latest_findings_only(self, username, age):
                 if finding not in eng_findings:
                     eng_findings.append(finding)
         for finding in eng_findings:
-            if (not finding.active or not finding.verified) and not finding.false_p:
+            if (not finding.active or not finding.verified) and (not finding.false_p or not finding.out_of_scope or not finding.mitigated):
                 finding.active = True
                 finding.verified = True
                 finding.save()
